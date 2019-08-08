@@ -1,8 +1,17 @@
+from __future__ import print_function
+
+import fnmatch
+import math
 import re
 import shutil
-import fnmatch
-from os import getcwd, listdir, remove, makedirs, walk
+import sys
+import tarfile
+import zipfile
+import gzip
+from os import getcwd, listdir, remove, makedirs, walk, stat
 from os.path import join, isdir, isfile, exists
+
+import progressbar
 
 
 def load_file_list(path=None, regx=r'\.csv', printable=True):
@@ -95,3 +104,79 @@ def find_file_generator(pattern, top):
     for path, dir_list, file_list in walk(top):
         for name in fnmatch.filter(file_list, pattern):
             yield join(path, name)
+
+
+def maybe_download_and_extract(filename, working_directory, url_source, extract=False, expected_bytes=None):
+    """
+    Checks if file exists in working_directory otherwise tries to dowload the file,
+    and optionally also tries to extract the file if format is ".zip" or ".tar"
+
+    Parameters
+    -----------
+    filename : str
+        The name of the (to be) dowloaded file.
+    working_directory : str
+        A folder path to search for the file in and dowload the file to
+    url_source : str
+        The URL to download the file from
+    extract : boolean
+        If True, tries to uncompress the dowloaded file is ".tar.gz/.tar.bz2" or ".zip" file, default is False.
+    expected_bytes : int or None
+        If set tries to verify that the downloaded file is of the specified size, otherwise raises an Exception,
+        defaults is None which corresponds to no check being performed.
+
+    Returns
+    ----------
+    str
+        File path of the dowloaded (uncompressed) file.
+
+    Examples
+    --------
+    >>> down_file = maybe_download_and_extract(filename='ERR166303.vcf.zip',
+    ...                                            working_directory='data/',
+    ...                                            url_source='http://galaxy.ustc.edu.cn:30803/liunianping/')
+
+    """
+    if sys.version_info[0] == 2:
+        from urllib import urlretrieve
+    else:
+        from urllib.request import urlretrieve
+
+    def _download(filename, working_directory, url_source):
+
+        progress_bar = None
+
+        def _dlProgress(block_num, block_size, total_size, pbar=progress_bar):
+            nonlocal progress_bar
+            if total_size != 0:
+                if progress_bar is None:
+                    progress_bar = progressbar.ProgressBar(maxval=total_size)
+                    progress_bar.start()
+                downloaded = block_num * block_size
+                if downloaded < total_size:
+                    progress_bar.update(downloaded)
+                else:
+                    progress_bar.finish()
+                    progress_bar = None
+
+        filepath = join(working_directory, filename)
+        urlretrieve(url_source + filename, filepath, reporthook=_dlProgress)
+
+    exists_or_mkdir(working_directory, verbose=False)
+    filepath = join(working_directory, filename)
+
+    if not exists(filepath):
+        _download(filename, working_directory, url_source)
+        statinfo = stat(filepath)
+        print('Succesfully downloaded %s %s bytes.' % (filename, statinfo.st_size))  # , 'bytes.')
+        if not (expected_bytes is None) and (expected_bytes != statinfo.st_size):
+            raise Exception('Failed to verify ' + filename + '. Can you get to it with a browser?')
+    if extract:
+        if tarfile.is_tarfile(filepath):
+            tarfile.open(filepath, 'r').extractall(working_directory)
+        elif zipfile.is_zipfile(filepath):
+            with zipfile.ZipFile(filepath) as zf:
+                zf.extractall(working_directory)
+        else:
+            print("Unknown compression_format only .tar.gz/.tar.bz2/.tar and .zip supported")
+    return filepath

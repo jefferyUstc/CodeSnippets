@@ -1,13 +1,11 @@
 from __future__ import print_function
 
 import fnmatch
-import math
 import re
 import shutil
 import sys
 import tarfile
 import zipfile
-import gzip
 from os import getcwd, listdir, remove, makedirs, walk, stat
 from os.path import join, isdir, isfile, exists
 

@@ -1,6 +1,6 @@
 import sys
 from psutil import cpu_count, Process
-from multiprocessing import cpu_count
+from multiprocessing import cpu_count as count_cpu
 
 
 def get_version(brief=False):
@@ -9,11 +9,11 @@ def get_version(brief=False):
     return sys.version_info[0]
 
 
+def get_logical_cpu_cores():
+    return count_cpu()
+
+
 def get_cpu_cores(logical=False):
-    return cpu_count(logical=logical)
-
-
-def get_cpu_cores2(logical=False):
     return cpu_count(logical=logical)
 
 

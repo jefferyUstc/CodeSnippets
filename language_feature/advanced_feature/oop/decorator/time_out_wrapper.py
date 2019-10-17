@@ -1,0 +1,31 @@
+import functools
+import signal
+import time
+
+
+def timeout(seconds, error_message='Function call timed out'):
+    def decorated(func):
+        def _handle_timeout(signum, frame):
+            raise TimeoutError(error_message)
+
+        def wrapper(*args, **kwargs):
+            signal.signal(signal.SIGALRM, _handle_timeout)
+            signal.alarm(seconds)
+            try:
+                result = func(*args, **kwargs)
+            finally:
+                signal.alarm(0)
+            return result
+
+        return functools.wraps(func)(wrapper)
+
+    return decorated
+
+
+@timeout(5)
+def slow_func(sleep_time):
+    time.sleep(sleep_time)
+
+
+slow_func(3)
+slow_func(10)

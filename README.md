@@ -1,2 +1,6 @@
 # CodeSnippets
-Code Snippets that are useful in daily programming, mainly in python or R language
+
+This code repository contains some useful code snippets, including python、R、shell scripts or examples.
+
+
+

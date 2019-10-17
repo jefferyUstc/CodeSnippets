@@ -12,7 +12,7 @@ from os.path import join, isdir, isfile, exists
 import progressbar
 
 
-def load_file_list(path=None, regx=r'\.csv', printable=True):
+def load_file_list(path=None, regx=r'\.csv', printable=True, full_path=True):
     """Return a file list in a folder by given a path and regular expression.
     Parameters
     ----------
@@ -21,6 +21,7 @@ def load_file_list(path=None, regx=r'\.csv', printable=True):
     regx : a string
         The regx of file name.
     printable : boolean, whether to print the files infomation.
+    :param full_path: return full path or file name
     """
     if not path:
         path = getcwd()
@@ -28,7 +29,12 @@ def load_file_list(path=None, regx=r'\.csv', printable=True):
     return_list = []
     for f in file_list:
         if re.search(regx, f):
-            return_list.append(join(path, f))
+            if full_path:
+                return_list.append(join(path, f))
+            else:
+                return_list.append(f)
+    if not return_list:
+        return None
     if printable:
         print('Match file example = %s' % (str(return_list[0])))
         print('Number of files = %d in path: %s' % (len(return_list), path))
@@ -44,7 +50,7 @@ def load_folder_list(path=""):
         A folder path.
 
     """
-    return [join(path, o) for o in listdir(path) if isdir(path.join(path, o))]
+    return [join(path, o) for o in listdir(path) if isdir(join(path, o))]
 
 
 def file_exists(file_path):
